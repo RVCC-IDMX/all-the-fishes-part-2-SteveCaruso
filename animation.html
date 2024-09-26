@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All the Fishes</title>
+    <script src="https://pixijs.download/release/pixi.js"></script>
+</head>
+<body>
+
+<script type="module">
+
+    //The App
+    const app = new PIXI.Application();
+    await app.init({
+        width:640,
+        height:480,
+        backgroundColor: 0x000000
+    });
+
+    //Add view to the body
+    document.body.appendChild(app.canvas);
+
+    //Expose the app to the document
+    window.app = app;
+
+    //Load in sprite
+    await PIXI.Assets.load('img/Goldfish PNG.png');
+
+    //Add our first sprite
+    let fish1 = PIXI.Sprite.from('img/Goldfish PNG.png');
+        fish1.scale.set(.25);
+        fish1.scale.x = -.25;
+        fish1.anchor.x = .8;
+        fish1.anchor.y = .5;
+        fish1.x = 100;
+        fish1.y = 100;
+
+    app.stage.addChild(fish1);
+
+    //The Animator
+    let Animate = {};
+
+    //Let's animate
+    Animate.to = function(obj, end) {
+
+        //Make it a Promise
+        return new Promise( (resolve, reject) => {
+
+            //Set initial state
+            var start = {
+                x : obj.x,
+                y : obj.y
+            };
+
+            //Defaults here
+            if (end.duration == undefined) end.duration = 0;
+            if (end.easing == undefined) end.easing = Animate.linear;
+
+            //When did we start animating?
+            var startTime = Date.now();
+
+            //Our animation loop
+            function loop() {
+
+                //Calculate where we are
+                let ticker = Date.now() - startTime;
+                let delta = ticker / end.duration;
+                let ease = end.easing(delta);
+
+                //Are we done?
+                if (delta >= 1 || end.duration == 0) {
+                    obj.x = end.x;
+                    obj.y = end.y;
+                    console.log("Done!");
+                    resolve();
+                    return;
+                }
+
+                //Interpolation function
+                let lerp = (a, b, n) => {
+                    return (1 - n) * a + n * b;
+                }
+
+                //Lerp X
+                obj.x = lerp(start.x, end.x, ease);
+                //Lerp X
+                obj.y = lerp(start.y, end.y, ease);
+
+                //Loop again
+                obj.animationID = requestAnimationFrame(loop);
+
+            }
+
+            //Stop animation
+            cancelAnimationFrame(obj.animationID);
+
+            //Call it
+            loop();
+        
+        //END Promise
+        });
+
+    }
+
+    //Stop animating!
+    Animate.stop = function(obj) {
+        //Stop animation
+        cancelAnimationFrame(obj.animationID);
+    }
+
+    //Easing functions
+    Animate.linear = (x) => x;
+    Animate.easeIn = (x) => x * x;
+    Animate.easeOut = (x) => 1 - (1-x) * (1-x);
+    Animate.easeInOut = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+
+    
+    async function pause(ms) {
+        return new Promise( (resolve, reject) => {
+            setTimeout(resolve,ms);
+        });
+    }
+
+    //Swim function
+    async function fishLoop1() {
+        await Animate.to(fish1,{
+            x:400,
+            y:400,
+            easing: Animate.easeInOut,
+            duration:2000
+        });
+        await Animate.to(fish1,{
+            x:400,
+            y:350,
+            easing: Animate.easeInOut,
+            duration:2000
+        });
+        fishLoop1();
+    }
+    fishLoop1();
+
+    app.canvas.addEventListener("mousedown", async () => {
+        Animate.stop(fish1);
+        await Animate.to(fish1,{
+            x:100,
+            y:100,
+            easing: Animate.easeInOut,
+            duration:3000
+        });
+        await pause(1000);
+        fishLoop1();
+    });
+
+
+</script>
+    
+</body>
+</html>
